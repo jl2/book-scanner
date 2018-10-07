@@ -21,4 +21,5 @@
            #:scan-from-cv-image
            #:scan-filtered-from-cv-image
            #:scan-from-file
-           #:scan-filtered-from-file))
+           #:scan-filtered-from-file
+           #:show-scan-from-file))

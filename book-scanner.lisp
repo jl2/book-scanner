@@ -41,9 +41,9 @@
     (let (
           (kernel (cv:create-mat 5 5 cv:+32FC1+))
           (mat #2A(( 0.0 0.0 0.0 0.0 0.0)
-                   ( 0.0 0.0 0.1 0.0 0.0)
-                   ( 0.0 -0.1 1.0 -0.1 0.0)
-                   ( 0.0 0.0 0.1 0.0 0.0)
+                   ( 0.0 0.2 0.0 0.2 0.0)
+                   ( 0.0 0.0 1.0 0.0 0.0)
+                   ( 0.0 0.2 0.0 0.2 0.0)
                    ( 0.0 0.0 0.0 0.0 0.0))))
       (unwind-protect
            (progn
@@ -88,7 +88,8 @@
                      (cl-tesseract:TessBaseAPIRecognize api (cffi:null-pointer))
                      (tess:tessbaseapigetutf8text api))))
         (format t "Barcodes: ~a~%UTF-8 Text: ~a~%" barcodes text)
-        (cv:release-image filtered)))))
+        (cv:release-image filtered)
+        (cons barcodes text)))))
 
 (defun scan-from-webcam (&key (camera 0) (fps 10))
   (with-gui-thread
@@ -114,3 +115,19 @@
          (data (scan-filtered-from-cv-image cvimage)))
     (cv:release-image cvimage)
     data))
+
+(defun show-scan-from-file (file-name)
+  (with-gui-thread
+    (cv:with-named-window ("book-scanner")
+      (let* ((image (cv:load-image file-name))
+             (fps 30))
+        
+        (loop
+           (let ((data (scan-filtered-from-cv-image image))
+                 (filtered (filter-for-ocr image))
+                 (c (cv:wait-key (floor (/ 1000 fps)))))
+             (cv:show-image "bar-code-scanner" filtered)
+             (format t "data: ~a~%" data)
+             (when (or (= c 27) (= c 1048603))
+               (format t "Exiting~%")
+               (return data))))))))
