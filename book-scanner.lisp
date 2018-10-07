@@ -34,24 +34,83 @@
       ,@body)))
 
 
+(defun filter-for-ocr (img)
+  "Apply a filter that enhances the lines in a bar code."
+  (let ((filtered (cv:create-image (cv:get-size img) 8 1)))
+    (cv:cvt-color img filtered cv:+rgb-2-gray+)
+    (let (
+          (kernel (cv:create-mat 5 5 cv:+32FC1+))
+          (mat #2A(( 0.0 0.0 0.0 0.0 0.0)
+                   ( 0.0 0.0 0.1 0.0 0.0)
+                   ( 0.0 -0.1 1.0 -0.1 0.0)
+                   ( 0.0 0.0 0.1 0.0 0.0)
+                   ( 0.0 0.0 0.0 0.0 0.0))))
+      (unwind-protect
+           (progn
+             (dotimes (i 5)
+               (dotimes (j 5)
+                 (cv:set-2d kernel i j (cv:scalar (aref mat j i)))))
+             (cv:filter-2d filtered filtered kernel))
+        (cv:free kernel))
+      filtered)
+    filtered))
+
+
+(defun scan-from-cv-image (image)
+  (when image
+    (sb-int:with-float-traps-masked (:invalid :divide-by-zero :overflow)
+      (let* ((barcodes (zbar-utils:scan-cv-image image))
+             (text (cl-tesseract:with-base-api api
+                     (cl-tesseract:init-tess-api api "eng")
+                     (cl-tesseract:tessbaseapisetimage api
+                                                       (cv:ipl-data image)
+                                                       (cv:ipl-width image)
+                                                       (cv:ipl-height image)
+                                                       3
+                                                       (* 3 (cv:ipl-width image)))
+                     (cl-tesseract:TessBaseAPIRecognize api (cffi:null-pointer))
+                     (tess:tessbaseapigetutf8text api))))
+        (format t "Barcodes: ~a~%UTF-8 Text: ~a~%" barcodes text)))))
+
+(defun scan-filtered-from-cv-image (image)
+  (when image
+    (sb-int:with-float-traps-masked (:invalid :divide-by-zero :overflow)
+      (let* ((barcodes (zbar-utils:scan-cv-image image))
+             (filtered (filter-for-ocr image))
+             (text (cl-tesseract:with-base-api api
+                     (cl-tesseract:init-tess-api api "eng")
+                     (cl-tesseract:tessbaseapisetimage api
+                                                       (cv:ipl-data filtered)
+                                                       (cv:ipl-width filtered)
+                                                       (cv:ipl-height filtered)
+                                                       1
+                                                       (* 1 (cv:ipl-width filtered)))
+                     (cl-tesseract:TessBaseAPIRecognize api (cffi:null-pointer))
+                     (tess:tessbaseapigetutf8text api))))
+        (format t "Barcodes: ~a~%UTF-8 Text: ~a~%" barcodes text)
+        (cv:release-image filtered)))))
+
 (defun scan-from-webcam (&key (camera 0) (fps 10))
   (with-gui-thread
     (cv:with-named-window ("bar-code-scanner")
       (cv:with-captured-camera (vid :width 800 :height 600 :idx camera)
         (loop
-           (let* ((frame (cv:query-frame vid)))
-             (unwind-protect
-                  (progn
-                    (cv:show-image "bar-code-scanner" frame)
-                    (let ((barcodes (zbar-utils:scan-cv-image frame))
-                          (c (cv:wait-key (floor (/ 1000 fps)))))
-                      (cond (barcodes
-                             (format t "~a~%" barcodes))
-                            (t
-                               (cl-tesseract:with-base-api api
-                                 (cl-tesseract:init-tess-api api "eng")
-                                 (cl-tesseract:tessbaseapisetimage api frame  )
-                                 (format t "~a~%" (tess:tessbaseapigetutf8text api))))))
-                      (when (or (= c 27) (= c 1048603))
-                        (format t "Exiting~%")
-                        (return))))))))))
+           (let* ((frame (cv:query-frame vid))
+                  (c (cv:wait-key (floor (/ 1000 fps)))))
+             (scan-from-cv-image frame)
+             (cv:show-image "book-scanner" frame)
+             (when (or (= c 27) (= c 1048603))
+               (format t "Exiting~%")
+               (return))))))))
+
+(defun scan-from-file (file-name)
+  (let* ((cvimage (cv:load-image file-name))
+         (data (scan-from-cv-image cvimage)))
+    (cv:release-image cvimage)
+    data))
+
+(defun scan-filtered-from-file (file-name)
+  (let* ((cvimage (cv:load-image file-name))
+         (data (scan-filtered-from-cv-image cvimage)))
+    (cv:release-image cvimage)
+    data))
