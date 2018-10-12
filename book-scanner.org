@@ -1,0 +1,21 @@
+* book-scanner
+
+** About
+This is an application to build a SQLite database of books by scanning their ISBN barcodes or their title pages.
+
+** Dependencies
+*** zbar
+*** cl-tesseract
+*** common-cv
+
+** License
+ ISC
+
+ Copyright (c) 2018 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
+
+** Future work
+*** TODO Implement reading title page using cl-tesseract
+*** DONE Study the cl-tesseract API to figure out how to read a CommonCV image in memory
+*** CANCELLED Debug why writing OpenCV image to file is so slow
+*** DONE Test OCR from webcam                                       :@home:
+*** TODO Replace webcam with gphoto2
