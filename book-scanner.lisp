@@ -131,3 +131,18 @@
              (when (or (= c 27) (= c 1048603))
                (format t "Exiting~%")
                (return data))))))))
+
+(defun scan-directory (directory-name database-name)
+  (let ((isbns (remove-duplicates
+                (sort
+                 (apply 
+                  #'concatenate
+                  'list
+                  (mapcar #'zbar-utils:simple-scan (uiop:directory-files (uiop:ensure-directory-pathname directory-name) "*.jpg")))
+                 #'string< :key #'cdr)
+                :test #'string= :key #'cdr)))
+  (bookdb:with-db (db database-name)
+    (dolist (isbn isbns)
+      (bookdb:add-book db (bookdb:lookup-isbn (cdr isbn)))))))
+  
+

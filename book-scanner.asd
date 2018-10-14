@@ -21,7 +21,7 @@
   :license  "ISC"
   :version "0.0.1"
   :serial t
-  :depends-on (#:common-cv #:zbar-utils #:png #:cl-tesseract #:j-utils #:trivial-main-thread)
+  :depends-on (#:common-cv #:zbar-utils #:png #:cl-tesseract #:j-utils #:trivial-main-thread #:bookdb)
   :components ((:file "package")
                (:file "book-scanner"))
   :in-order-to ((test-op (test-op book-scanner.test))))

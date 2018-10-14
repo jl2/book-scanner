@@ -17,9 +17,11 @@
 
 (defpackage :book-scanner
   (:use #:cl #:j-utils #:alexandria)
-  (:export #:scan-from-webcam
-           #:scan-from-cv-image
-           #:scan-filtered-from-cv-image
+  (:export ;; #:scan-from-webcam
+           ;; #:scan-from-cv-image
+           ;; #:scan-filtered-from-cv-image
            #:scan-from-file
-           #:scan-filtered-from-file
-           #:show-scan-from-file))
+           ;; #:scan-filtered-from-file
+           ;; #:show-scan-from-file
+           #:scan-directory
+           ))
