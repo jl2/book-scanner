@@ -138,7 +138,12 @@
                  (apply 
                   #'concatenate
                   'list
-                  (mapcar #'zbar-utils:simple-scan (uiop:directory-files (uiop:ensure-directory-pathname directory-name) "*.jpg")))
+                  (mapcar (lambda (image-file-name)
+                            (format t "Scanning ~a... " image-file-name)
+                            (let ((results (zbar-utils:simple-scan image-file-name)))
+                              (format t "found ~a~%" results)
+                              results))
+                          (uiop:directory-files (uiop:ensure-directory-pathname directory-name) "*.JPG")))
                  #'string< :key #'cdr)
                 :test #'string= :key #'cdr)))
   (bookdb:with-db (db database-name)
